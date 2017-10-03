@@ -35,6 +35,7 @@ graders = args.graders
 
 def main(commenting, grading, source, target, hw_dir=None, graders=None):
     students = next(os.walk(source))[1]
+    for s in students: print(s)
 
     if graders is None:
         zipping = True
@@ -61,22 +62,11 @@ def main(commenting, grading, source, target, hw_dir=None, graders=None):
 
 
     i = 0
-    while os.path.exists(os.path.join(hw_dir, target + str(i))):
+    while os.path.exists(target + str(i)):
         i += 1
     target += str(i)
+    os.makedirs(target)
 
-    if commenting:
-        for student in students:
-            target_comments = ""
-            for grader in graders:
-                with open(os.path.join(grader_path, student, "comments.txt"), 'r', encoding="latin-1") as f:
-                    comments = f.read()
-                    target_comments += ('({})     '.format(grader) + comments + '\n\n--------\n\n')
-
-
-            os.makedirs(os.path.join(hw_dir, target, student))
-            with open(os.path.join(hw_dir, target, student, "comments.txt"), 'w') as f:
-                f.write(target_comments)
 
     if grading:
         field_names=["Display ID","ID","Last Name","First Name","grade","Submission date","Late submission"]
@@ -90,6 +80,8 @@ def main(commenting, grading, source, target, hw_dir=None, graders=None):
                 master_grades[l[0]] = 0.
 
         grades_stats = np.zeros((len(graders),len(students)))
+        all_grades = OrderedDict()
+        all_grades['master'] = master_grades
         for i, grader in enumerate(graders):
             with open(os.path.join(hw_dir, grader, 'grades.csv'), 'r') as infile:
                 lines = infile.read().split('\n')
@@ -98,6 +90,8 @@ def main(commenting, grading, source, target, hw_dir=None, graders=None):
             if lines_list[-1] == ['']:
                 lines_list = lines_list[:-1]
             subgrades = OrderedDict()
+            all_grades[grader] = subgrades
+
             for line in lines_list:
                 try: subgrades[line[0]] = line[4]
                 except IndexError:
@@ -124,7 +118,7 @@ def main(commenting, grading, source, target, hw_dir=None, graders=None):
         overall_std = np.std(np.sum(grades_stats, 0), 0)
         print("Overall: median = {:.2f}, mean = {:.2f}, std = {:.2f}".format(overall_median, overall_mean, overall_std))
 
-        with open(os.path.join(hw_dir, target, 'grades.csv'), mode='w') as outfile:
+        with open(os.path.join(target, 'grades.csv'), mode='w') as outfile:
             for l in header_list:
                 l_ = ['\"' + x + '\"' for x in l]
                 out_str = ','.join(l_)
@@ -137,9 +131,27 @@ def main(commenting, grading, source, target, hw_dir=None, graders=None):
                 out_str = ','.join(l_)
                 outfile.write(out_str + '\n')
 
+
+    if commenting:
+        for student in students:
+            target_comments = ""
+            for grader in graders:
+                subgrades = all_grades[grader]
+                grader_path = os.path.join(hw_dir, grader)
+                net_id = student.split('(')[1].rstrip(')')
+
+                with open(os.path.join(grader_path, student, "comments.txt"), 'r', encoding="latin-1") as f:
+                    comments = f.read()
+                    target_comments += ('({}) {} points\n'.format(grader, subgrades[net_id]) + comments + '\n\n--------\n\n')
+
+
+            os.makedirs(os.path.join(target, student))
+            with open(os.path.join(target, student, "comments.txt"), 'w', encoding="latin-1") as f:
+                f.write(target_comments)
+
         # zip everything and destroy the evidence
 
-        target_path = os.path.join(hw_dir, target)
+        target_path = os.path.join(target)
         shutil.make_archive(target_path, 'zip', target_path)
 
         if zipping:
