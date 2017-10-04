@@ -5,9 +5,12 @@ import numpy as np
 import zipfile
 import shutil
 '''
-This script is for merging the homework directories provided by the graders. They
-will send you a bunch of zip files, which you decompress and provide as arguments
-to --graders.
+This script is for merging the homework directories provided by the graders.
+
+--hw_dir: directory containing a zipfile of each grade directory
+--source: blank copy of the grade directory
+--graders: deprecated
+--target: name of target zip file
 
 You will also need a blank copy of the grade directory. To get this,
 go on NYU Classes, click "grade" under the appropriate assignment and then "download
@@ -111,12 +114,12 @@ def main(commenting, grading, source, target, hw_dir=None, graders=None):
             grader_median = np.median(grader_total)
             grades_stats[i] = grader_total
             #import ipdb; ipdb.set_trace()
-            print("Problem {}: median = {:.2f}, mean = {:.2f}, std = {:.2f}".format(grader, grader_median, grader_mean, grader_std))
+            print("Problem {}: median = {:.1f}, mean = {:.1f}, std = {:.1f}".format(grader, grader_median, grader_mean, grader_std))
 
         overall_median = np.median(np.sum(grades_stats, 0), 0)
         overall_mean = np.mean(np.sum(grades_stats, 0), 0)
         overall_std = np.std(np.sum(grades_stats, 0), 0)
-        print("Overall: median = {:.2f}, mean = {:.2f}, std = {:.2f}".format(overall_median, overall_mean, overall_std))
+        print("Overall: median = {:.1f}, mean = {:.1f}, std = {:.1f}".format(overall_median, overall_mean, overall_std))
 
         with open(os.path.join(target, 'grades.csv'), mode='w') as outfile:
             for l in header_list:
