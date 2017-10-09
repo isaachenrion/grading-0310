@@ -50,6 +50,7 @@ def main(commenting, grading, source, target, hw_dir=None, graders=None):
         for file in os.listdir(hw_dir):
             if file.endswith(".zip"):
                 graders.append(file.rstrip('.zip'))
+        graders = sorted(graders)
 
         # unzip
         for grader in graders:
@@ -108,7 +109,7 @@ def main(commenting, grading, source, target, hw_dir=None, graders=None):
                     grader_total[j] = sg
                     master_grades[net_id] = str(float(master_grade) + sg)
                 except KeyError:
-                    import ipdb; ipdb.set_trace()
+                    pass
             grader_mean = np.mean(grader_total)
             grader_std = np.std(grader_total)
             grader_median = np.median(grader_total)
@@ -143,24 +144,29 @@ def main(commenting, grading, source, target, hw_dir=None, graders=None):
                 grader_path = os.path.join(hw_dir, grader)
                 net_id = student.split('(')[1].rstrip(')')
 
-                with open(os.path.join(grader_path, student, "comments.txt"), 'r', encoding="latin-1") as f:
-                    comments = f.read()
-                    target_comments += ('({}) {} points\n'.format(grader, subgrades[net_id]) + comments + '\n\n--------\n\n')
-
+                try:
+                    with open(os.path.join(grader_path, student, "comments.txt"), 'r', encoding="latin-1") as f:
+                        comments = f.read()
+                        target_comments += ('({}) {} points\n'.format(grader, subgrades[net_id]) + comments + '\n\n--------\n\n')
+                except FileNotFoundError as e:
+                    print(e)
+                    print(student, grader)
 
             os.makedirs(os.path.join(target, student))
-            with open(os.path.join(target, student, "comments.txt"), 'w', encoding="latin-1") as f:
-                f.write(target_comments)
+            try:
+                with open(os.path.join(target, student, "comments.txt"), 'w', encoding="latin-1") as f:
+                    f.write(target_comments)
+            except FileNotFoundError as e:
+                print(e)
 
         # zip everything and destroy the evidence
 
-        target_path = os.path.join(target)
-        shutil.make_archive(target_path, 'zip', target_path)
+        #target_path = os.path.join(target)
+        #shutil.make_archive(target_path, 'zip', target_path)
 
-        if zipping:
-            for grader in graders:
-                shutil.rmtree(os.path.join(hw_dir, grader))
-            shutil.rmtree(target_path)
+        for grader in graders:
+            shutil.rmtree(os.path.join(hw_dir, grader))
+            #shutil.rmtree(target_path)
 
 
 
